@@ -8,6 +8,70 @@ import cv2
 from PIL import Image
 
 
+class AsciiImageCV2:
+    _SCALE = 0.4
+    _GRAY_SCALE = \
+        "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvu" + \
+        "nxrjft/|\\()1{}[]?-_+~<>i!lI;:,\"^`'. "
+
+    def __init__(self, image):
+        self.image = cv2.flip(cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE), 1)
+        self.w, self.h, _ = self.image.shape
+        self.cols = int(self.w * self._SCALE)
+        # self.rows = int(self.h * self._SCALE / 2)
+        self.rows = int(self.h * self._SCALE)
+
+    def set_scale(self, scale):
+        self._SCALE = float(scale)
+
+    def rotate(self, image, angle):
+        (h, w) = image.shape[:2]
+        center = (int(w / 2), int(h / 2))
+        rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1)
+        return cv2.warpAffine(image, rotation_matrix, (w, h))
+
+    def get_average_gray(self, pixel):
+        image_arr = np.array(pixel)
+        w, h, _ = image_arr.shape
+        return int(np.average(image_arr.reshape(w * h * _)))
+
+    def crop_image(self, x_start, y_start, x_end, y_end):
+        return self.image[x_start:x_end, y_start:y_end]
+
+    def convert_to_ascii(self):
+        if self._SCALE > 1 or self._SCALE < 0:
+            sys.exit(0)
+
+        cols = int(self.w * self._SCALE)
+        rows = int(self.h * self._SCALE)
+        w_part = self.w / cols
+        h_part = self.h / rows
+
+        ascii_image = []
+
+        for row in range(rows):
+            y_start = int(row * h_part)
+            y_end = int((row + 1) * h_part)
+
+            if row == rows - 1:
+                y_end = self.h
+            ascii_image.append('')
+
+            for col in range(cols):
+                x_start = int(col * w_part)
+                x_end = int((col + 1) * w_part)
+
+                if col == cols - 1:
+                    x_end = self.w
+
+                avg = self.get_average_gray(
+                    self.crop_image(x_start, y_start, x_end, y_end))
+
+                ascii_image[row] += self._GRAY_SCALE[
+                    int((avg * len(self._GRAY_SCALE) - 1) / 255)]
+
+        return ascii_image
+
 
 class AsciiImage:
     _SCALE = 0.3
@@ -24,7 +88,6 @@ class AsciiImage:
     def get_average_gray(self, image_part):
         image_arr = np.array(image_part)
         w, h = image_arr.shape
-
         return int(np.average(image_arr.reshape(w * h)))
 
     def convert_to_ascii(self):
@@ -97,7 +160,9 @@ class ArgParser:
 
 def main():
     parser = ArgParser(sys.argv[1:])
-    image = AsciiImage(Image.open(parser.image).convert('L'))
+    # image = AsciiImage(Image.open(parser.image).convert('L'))
+    image = AsciiImageCV2(
+        cv2.cvtColor(cv2.imread(parser.image), cv2.COLOR_BGR2GRAY))
 
     if parser.scale:
         image.set_scale(parser.scale)
