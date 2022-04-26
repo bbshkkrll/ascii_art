@@ -1,6 +1,6 @@
 import sys
 import unittest
-from ascii_art import ArgParser, AsciiImage
+from arg_parser import ArgParser
 
 
 class MyTestCase(unittest.TestCase):

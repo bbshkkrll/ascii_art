@@ -11,7 +11,7 @@ class ArgParser:
         self.args_parser.add_argument('-v', dest='video', required=False)
         self.args_parser.add_argument('-o', dest='out',
                                       help='path to out.txt file, '
-                                           'default: out{image_name}_ascii.txt)',
+                                           'default: out{filename}_ascii.txt)',
                                       required=False)
         self.args_parser.add_argument('-s', dest='scale',
                                       help='scale of resulting ascii image',

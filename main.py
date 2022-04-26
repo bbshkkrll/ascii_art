@@ -2,7 +2,6 @@ import sys
 import webbrowser
 
 from PIL import Image
-
 from arg_parser import ArgParser
 from ascii_art import AsciiImage
 from video_streamer import AsciiVideo

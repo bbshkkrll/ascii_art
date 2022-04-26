@@ -1,9 +1,8 @@
 import sys
-
-import PIL.Image
-from PIL import ImageDraw, Image
 import cv2
 import numpy as np
+
+from PIL import ImageDraw, Image
 from ascii_art import AsciiImage
 
 
@@ -23,8 +22,7 @@ class AsciiVideo:
             if frame is None:
                 sys.exit()
 
-            img = self.Converter.convert_to_ascii(PIL.Image.fromarray(frame),
-                                                  1)
+            img = self.Converter.convert_to_ascii(Image.fromarray(frame), 1)
 
             rows, cols = len(img), len(img[0])
 
@@ -39,6 +37,7 @@ class AsciiVideo:
 
             if cv2.waitKey(1) == ord("q"):
                 break
+
             cv2.imshow("Result", output_image)
 
         self.cap.release()
