@@ -3,8 +3,8 @@ import webbrowser
 
 from PIL import Image
 from arg_parser import ArgParser
-from ascii_art import AsciiImage
-from video_streamer import AsciiVideo
+from converter import AsciiImage
+from streamer import AsciiVideo
 
 
 def main():
@@ -22,7 +22,6 @@ def main():
             for line in ascii_img:
                 f.write(line + '\n')
 
-        print(parser.out)
         webbrowser.open(parser.out)
 
     if parser.video:
