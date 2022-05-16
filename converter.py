@@ -2,8 +2,6 @@ import sys
 import numpy as np
 from PIL import Image, ImageDraw
 
-from saver import Saver
-
 
 class Converter:
     _SCALE = 0.3
@@ -17,7 +15,8 @@ class Converter:
     def set_scale(self, scale):
         self._SCALE = float(scale)
 
-    def get_average_gray(self, image_part):
+    @staticmethod
+    def get_avg_gray(image_part):
         image_arr = np.array(image_part.convert('L'))
         return int(np.average(image_arr))
 
@@ -25,7 +24,7 @@ class Converter:
         image_rgba = np.array(image.convert('RGBA').split()[-1])
         if np.average(image_rgba) < 255:
             return self._INVISIBLE_PIXEL
-        return self.get_average_gray(image)
+        return self.get_avg_gray(image)
 
     def convert_to_ascii(self, image, rows_factor):
 
@@ -62,7 +61,7 @@ class Converter:
                     avg = self.get_average_alpha(
                         image.crop((x_start, y_start, x_end, y_end)))
                 else:
-                    avg = self.get_average_gray(
+                    avg = self.get_avg_gray(
                         image.crop((x_start, y_start, x_end, y_end)))
 
                 if avg != '=':
@@ -76,15 +75,8 @@ class Converter:
 
         rows, cols = len(txt_list), len(txt_list[0])
 
-        # if mode == 'PNG':
-        #     created_image = Image.new("RGBA", (
-        #         cols * self._PIXEL_SCALE, rows * self._PIXEL_SCALE))
-        # else:
-        #     created_image = Image.new("RGB", (
-        #         cols * self._PIXEL_SCALE, rows * self._PIXEL_SCALE))
-
         created_image = Image.new(mode, (
-                    cols * self._PIXEL_SCALE, rows * self._PIXEL_SCALE))
+            cols * self._PIXEL_SCALE, rows * self._PIXEL_SCALE))
 
         draw_image = ImageDraw.Draw(created_image)
 
@@ -100,11 +92,3 @@ class Converter:
                         txt_list[row][col])
 
         return created_image
-
-
-if __name__ == '__main__':
-    converter = Converter()
-    converter.set_scale(0.1)
-    txt, frmt = converter.convert_to_ascii(Image.open('in\\navalych.jpg'), 1)
-    saver = Saver()
-    saver.save_image(converter.create_frame(txt, frmt), 'gnida')

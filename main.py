@@ -1,7 +1,6 @@
-import os.path
+import sys
 
-from video_saver import VideoSaver
+from arg_parser import ArgParser
 
 if __name__ == '__main__':
-    saver = VideoSaver('in\\anime-dance-happy.gif', 'out\\2.gif')
-    saver.save()
+    args_parser = ArgParser(sys.argv[1:])
