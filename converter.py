@@ -2,8 +2,10 @@ import sys
 import numpy as np
 from PIL import Image, ImageDraw
 
+from saver import Saver
 
-class AsciiImage:
+
+class Converter:
     _SCALE = 0.3
     _GRAY_SCALE = \
         "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvu" + \
@@ -26,6 +28,7 @@ class AsciiImage:
         return self.get_average_gray(image)
 
     def convert_to_ascii(self, image, rows_factor):
+
         if self._SCALE > 1 or self._SCALE < 0:
             sys.exit()
 
@@ -67,33 +70,41 @@ class AsciiImage:
                         int((avg * len(self._GRAY_SCALE) - 1) / 255)]
                 else:
                     ascii_image[row] += avg
+        return ascii_image, image.mode
 
-        return ascii_image
+    def create_frame(self, txt_list, mode):
 
-    def create_picture(self, filename):
-        img = Image.open(filename)
-        ascii_img = self.converter.convert_to_ascii(img, 1)
+        rows, cols = len(txt_list), len(txt_list[0])
 
-        rows, cols = len(ascii_img), len(ascii_img[0])
+        # if mode == 'PNG':
+        #     created_image = Image.new("RGBA", (
+        #         cols * self._PIXEL_SCALE, rows * self._PIXEL_SCALE))
+        # else:
+        #     created_image = Image.new("RGB", (
+        #         cols * self._PIXEL_SCALE, rows * self._PIXEL_SCALE))
 
-        if img.format != 'PNG':
-            created_image = Image.new("RGB", (
-                cols * self._PIXEL_SCALE, rows * self._PIXEL_SCALE))
-        else:
-            created_image = Image.new("RGBA", (
-                cols * self._PIXEL_SCALE, rows * self._PIXEL_SCALE))
+        created_image = Image.new(mode, (
+                    cols * self._PIXEL_SCALE, rows * self._PIXEL_SCALE))
 
         draw_image = ImageDraw.Draw(created_image)
 
         for row in range(rows):
             for col in range(cols):
-                if ascii_img[row][col] == '=':
+                if txt_list[row][col] == '=':
                     draw_image.text(
                         (col * self._PIXEL_SCALE, row * self._PIXEL_SCALE),
                         ' ')
                 else:
                     draw_image.text(
                         (col * self._PIXEL_SCALE, row * self._PIXEL_SCALE),
-                        ascii_img[row][col])
+                        txt_list[row][col])
 
-        return created_image, img.format
+        return created_image
+
+
+if __name__ == '__main__':
+    converter = Converter()
+    converter.set_scale(0.1)
+    txt, frmt = converter.convert_to_ascii(Image.open('in\\navalych.jpg'), 1)
+    saver = Saver()
+    saver.save_image(converter.create_frame(txt, frmt), 'gnida')

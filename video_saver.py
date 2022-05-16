@@ -1,97 +1,126 @@
 import multiprocessing
+import os.path
+import sys
+
 import cv2
 import numpy as np
-from PIL import Image, ImageDraw
-from converter import AsciiImage
-
-converter = AsciiImage()
+from PIL import Image
+from converter import Converter
 
 
-def convert(img):
-    return converter.convert_to_ascii(img, 1)
+# converter = Converter()
+# converter.set_scale(0.5)
+
+#
+# def convert(img):
+#     txt, mode = converter.convert_to_ascii(img, 1)
+#     converter.create_frame(txt, mode)
+#
+#
+# def save_gif(response):
+#     response[0].save("ttt.gif", format='GIF',
+#                      append_images=response,
+#                      save_all=True, duration=200, loop=0)
+
+#
+# def end_func(response):
+#     codec = cv2.VideoWriter_fourcc(*'MPEG')
+#
+#     writer = cv2.VideoWriter('out\\mama.mp4', codec, 24,
+#                              response[0].size)
+#     for img in response:
+#         writer.write(np.array(img))
+#
+#     writer.release()
 
 
-def save_gif(response):
-    _PIXEL_SCALE = 8
-
-    rows, cols = len(response[0]), len(response[0][0])
-
-    frames = []
-    for img in response:
-
-        output_image = Image.new("RGB", (
-            cols * _PIXEL_SCALE, rows * _PIXEL_SCALE))
-
-        ascii_img = ImageDraw.Draw(output_image)
-
-        for row in range(rows):
-            for col in range(cols):
-                if img[row][col] == '=':
-                    ascii_img.text(
-                        (col * _PIXEL_SCALE, row * _PIXEL_SCALE),
-                        ' ')
-                else:
-                    ascii_img.text(
-                        (col * _PIXEL_SCALE, row * _PIXEL_SCALE),
-                        img[row][col])
-
-        frames.append(output_image)
-
-    frame = frames[0]
-    frame.save("ya_ne_mogu_naxui.gif", format='GIF', append_images=frames,
-               save_all=True, duration=80, loop=0)
+def print_name():
+    print(__name__)
 
 
-def end_func(response):
-    _PIXEL_SCALE = 8
+class VideoSaver:
+    def __init__(self, filename, out_path):
+        cap = cv2.VideoCapture(filename)
 
-    codec = cv2.VideoWriter_fourcc(*'MPEG')
+        self.converter = Converter()
+        self.converter.set_scale(0.35)
+        self.out_path = out_path
+        self.frames_count = int(cap.get(7))
+        self.fps = int(cap.get(5))
+        self.frames = [] * self.frames_count
+        self.format = filename.split('.')[-1]
+        self.duration = self.frames_count // self.fps
 
-    rows, cols = len(response[0]), len(response[0][0])
+        while cap.isOpened():
+            _, frame = cap.read()
 
-    writer = cv2.VideoWriter('out\\5.mp4', codec, 12,
-                             (cols * _PIXEL_SCALE, rows * _PIXEL_SCALE))
+            if frame is None:
+                break
 
-    frames = []
-    for img in response:
+            self.frames.append(Image.fromarray(frame))
 
-        output_image = Image.new("RGB", (
-            cols * _PIXEL_SCALE, rows * _PIXEL_SCALE))
+        cap.release()
 
-        ascii_img = ImageDraw.Draw(output_image)
+    def save_as_gif(self, frames):
+        if frames is None or frames[0] is None or self.format != 'gif':
+            return
 
-        for row in range(rows):
-            for col in range(cols):
-                if img[row][col] == '=':
-                    ascii_img.text(
-                        (col * _PIXEL_SCALE, row * _PIXEL_SCALE),
-                        ' ')
-                else:
-                    ascii_img.text(
-                        (col * _PIXEL_SCALE, row * _PIXEL_SCALE),
-                        img[row][col])
+        frames[0].save(self.out_path,
+                       format='GIF',
+                       append_images=frames,
+                       save_all=True, duration=self.duration, loop=0)
 
-        writer.write(np.array(output_image))
+    def save_as_mp4(self, frames):
+        fourcc = cv2.VideoWriter_fourcc(*'MPEG')
 
-    cap.release()
-    writer.release()
+        writer = cv2.VideoWriter(
+            self.out_path, fourcc,
+            self.fps,
+            frames[0].size)
+        for frame in frames:
+            writer.write(np.array(frame))
 
+        writer.release()
+
+    def wrap_converter(self, frame):
+        return self.converter.create_frame(
+            *self.converter.convert_to_ascii(frame, 1))
+
+    def save(self):
+
+        if self.format == 'mp4':
+            with multiprocessing.Pool(multiprocessing.cpu_count() * 3) as p:
+                p.map_async(self.wrap_converter, self.frames,
+                            callback=self.save_as_mp4)
+                p.close()
+                p.join()
+        elif self.format == 'gif':
+            with multiprocessing.Pool(multiprocessing.cpu_count() * 3) as p:
+                p.map_async(self.wrap_converter, self.frames,
+                            callback=self.save_as_gif)
+                p.close()
+                p.join()
+        else:
+            raise ValueError(f'Не поддерживаемый формат{self.format}')
+
+# if __name__ == '__main__':
+
+# cap = cv2.VideoCapture('in\\2ull.gif')
+# frames = [] * int(cap.get(7))
+# print(cap.get(5))
+# while cap.isOpened():
+#     _, frame = cap.read()
+#
+#     if frame is None:
+#         break
+#
+#     frames.append(Image.fromarray(frame))
+#
+# with multiprocessing.Pool(multiprocessing.cpu_count() * 3) as p:
+#     p.map_async(convert, frames, callback=save_gif)
+#     p.close()
+#     p.join()
 
 if __name__ == '__main__':
-
-    cap = cv2.VideoCapture('in\\mp4.mp4')
-    frames = [] * int(cap.get(7))
-    print(cap.get(5))
-    while cap.isOpened():
-        _, frame = cap.read()
-
-        if frame is None:
-            break
-
-        frames.append(Image.fromarray(frame))
-
-    with multiprocessing.Pool(multiprocessing.cpu_count() * 3) as p:
-        p.map_async(convert, frames, callback=end_func)
-        p.close()
-        p.join()
-
+    saver = VideoSaver('in\\cat.gif', 'out\\1.gif')
+    saver.save()

@@ -1,9 +1,4 @@
 import os.path
-import webbrowser
-
-import numpy as np
-from PIL import Image, ImageDraw
-from converter import AsciiImage
 
 
 # img = Image.open('in\\skull.png')
@@ -45,7 +40,7 @@ from converter import AsciiImage
 class Saver:
     @staticmethod
     def save_image(img, name):
-        frmt = 'JPG'
+        frmt = 'JPEG'
         if img.mode == 'RGBA':
             frmt = 'PNG'
         img.save(
