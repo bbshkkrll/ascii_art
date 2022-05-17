@@ -20,7 +20,7 @@ class Converter:
         image_arr = np.array(image_part.convert('L'))
         return int(np.average(image_arr))
 
-    def get_average_alpha(self, image):
+    def _get_average_alpha(self, image):
         image_rgba = np.array(image.convert('RGBA').split()[-1])
         if np.average(image_rgba) < 255:
             return self._INVISIBLE_PIXEL
@@ -58,7 +58,7 @@ class Converter:
                     x_end = width
 
                 if image.mode == 'RGBA':
-                    avg = self.get_average_alpha(
+                    avg = self._get_average_alpha(
                         image.crop((x_start, y_start, x_end, y_end)))
                 else:
                     avg = self.get_avg_gray(

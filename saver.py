@@ -1,5 +1,7 @@
 import multiprocessing
 import os
+import sys
+
 import cv2
 import numpy as np
 from PIL import Image
@@ -7,16 +9,29 @@ from converter import Converter
 
 
 class Saver:
-    def __init__(self, filename, out_path):
-        cap = cv2.VideoCapture(filename)
+    def __init__(self, path, out_path, result_name):
 
+        self.path = path
         self.converter = Converter()
-        self.converter.set_scale(0.2)
+        self.converter.set_scale(0.35)
+        self.out_name = result_name
         self.out_path = out_path
+
+        self.duration = None
+        self.frames = None
+        self.fps = None
+        self.frames_count = None
+
+        self.filename, self.ext = os.path.splitext(path)
+        if self.ext == '.mp4' or self.ext == '.gif':
+            self.get_frames(self.path)
+
+    def get_frames(self, path):
+        cap = cv2.VideoCapture(path)
+
         self.frames_count = int(cap.get(7))
         self.fps = int(cap.get(5))
         self.frames = [] * self.frames_count
-        self.format = filename.split('.')[-1]
         self.duration = self.frames_count // self.fps
 
         while cap.isOpened():
@@ -30,19 +45,20 @@ class Saver:
         cap.release()
 
     def save_as_gif(self, frames):
-        if frames is None or frames[0] is None or self.format != 'gif':
-            return
+        if frames is None or frames[0] is None or self.ext != '.gif':
+            raise ValueError
 
-        frames[0].save(self.out_path,
-                       format='GIF',
-                       append_images=frames,
-                       save_all=True, duration=self.duration, loop=0)
+        frames[0].save(
+            os.path.join(self.out_path, f'{self.out_name}{self.ext}'),
+            format='GIF',
+            append_images=frames,
+            save_all=True, duration=self.duration, loop=0)
 
     def save_as_mp4(self, frames):
         fourcc = cv2.VideoWriter_fourcc(*'MPEG')
 
         writer = cv2.VideoWriter(
-            self.out_path, fourcc,
+            os.path.join(self.out_path, f'{self.out_name}{self.ext}'), fourcc,
             self.fps,
             frames[0].size)
         for frame in frames:
@@ -50,32 +66,34 @@ class Saver:
 
         writer.release()
 
+    def save_image(self, img):
+
+        img.save(os.path.join(self.out_path,
+                              f'{self.out_name}{self.ext}'),
+                 img.format)
+
     def wrap_converter(self, frame):
         return self.converter.create_frame(
             *self.converter.convert_to_ascii(frame, 1))
 
     def save(self):
 
-        if self.format == 'mp4':
+        if self.ext == '.mp4':
             with multiprocessing.Pool(multiprocessing.cpu_count() * 3) as p:
                 p.map_async(self.wrap_converter, self.frames,
                             callback=self.save_as_mp4)
                 p.close()
                 p.join()
-        elif self.format == 'gif':
+        elif self.ext == '.gif':
             with multiprocessing.Pool(multiprocessing.cpu_count() * 3) as p:
                 p.map_async(self.wrap_converter, self.frames,
                             callback=self.save_as_gif)
                 p.close()
                 p.join()
-        else:
-            raise ValueError(f'Не поддерживаемый формат: {self.format}')
 
-    @staticmethod
-    def save_image(img, name):
-        frmt = 'JPEG'
-        if img.mode == 'RGBA':
-            frmt = 'PNG'
-        img.save(
-            os.path.join(os.getcwd(), 'out',
-                         f'{name}.{frmt.lower()}'), frmt)
+        elif self.ext == '.jpg' or self.ext == '.jpeg' or self.ext == '.png':
+            ascii_img = self.wrap_converter(Image.open(self.path))
+            self.save_image(ascii_img)
+
+        else:
+            raise ValueError(f'Не поддерживаемый формат: {self.ext}')
