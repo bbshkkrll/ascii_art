@@ -1,15 +1,12 @@
 import os.path
-import sys
 import unittest
 
 from PIL import Image
-
 from converter import Converter
 from saver import Saver
 
 
 class SaverTest(unittest.TestCase):
-
     def test_exists_file_png(self):
         saver = Saver(os.path.join('in', 'skull.png'), 'out', 'skull')
         saver.save()

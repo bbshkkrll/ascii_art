@@ -1,9 +1,8 @@
 import multiprocessing
 import os
-import sys
-
 import cv2
 import numpy as np
+
 from PIL import Image
 from converter import Converter
 
@@ -13,7 +12,7 @@ class Saver:
 
         self.path = path
         self.converter = Converter()
-        self.converter.set_scale(0.35)
+        self.converter.set_scale(0.2)
         self.out_name = result_name
         self.out_path = out_path
 
@@ -67,7 +66,7 @@ class Saver:
         writer.release()
 
     def save_image(self, img):
-
+        # img = img.resize((img.size[0] // 4, img.size[1] // 4))
         img.save(os.path.join(self.out_path,
                               f'{self.out_name}{self.ext}'),
                  img.format)

@@ -1,4 +1,3 @@
-import os
 import sys
 
 from arg_parser import ArgParser
